@@ -1,0 +1,54 @@
+---
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: evicted-pods
+  namespace: awx
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: evicted-pods
+  namespace: awx
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "patch", "list", "watch", "delete"] 
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: evicted-pods
+  namespace: awx
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: evicted-pods
+subjects:
+  - kind: ServiceAccount
+    name: evicted-pods
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: awx-pod-delete
+  namespace: awx
+spec:
+  concurrencyPolicy: Forbid
+  schedule: "*/5 * * * *" # At minute 0 past every hour, chage it.
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 600
+      template:
+        spec:
+          serviceAccountName: evicted-pods
+          restartPolicy: Never
+          containers:
+            - name: evicted-container
+              image: vnextacr.azurecr.io/evicted-pod:v5
+          imagePullSecrets:
+            - name: vnextacr-registry

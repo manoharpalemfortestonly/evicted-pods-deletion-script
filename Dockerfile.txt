@@ -1,0 +1,13 @@
+# Download base image ubuntu 20.04
+FROM ubuntu:20.04
+# Disable Prompt During Packages Installation
+ARG DEBIAN_FRONTEND=noninteractive
+
+#RUN apt update -y
+#RUN apt upgrade -y
+#RUN apt install curl -y
+#RUN apt install jq -y
+WORKDIR /
+copy "evicted-pod.sh" "/evicted-pod.sh"
+copy "error.sh" "/error.sh"
+ENTRYPOINT ["./evicted-pod.sh"]
